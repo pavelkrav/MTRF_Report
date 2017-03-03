@@ -95,82 +95,17 @@ namespace MTRF_Report
 			Console.WriteLine($"Last request is #{reqAmount}");
 		}
 
-		public void weeklyResolvedRequests()
-		{
-			long week = 86400 * 7 * 1000;
-
-			int[] made = new int[techAmount];
-			for (int j = 0; j < techAmount; j++)
-				made[j] = 0;
-
-			Request req = new Request(reqAmount);
-			long lTime = req.createdtime;
-
-			int i = reqAmount;
-			do
-			{
-				req = new Request(i);
-				if (req.sdp_status == "Failed")
-				{
-					Console.WriteLine($"Checked request #{i} - Does not exist");
-					i--;
-				}
-				else if (req.status != "Выполнено")
-				{
-					Console.WriteLine($"Checked request #{i} - Pending");
-					i--;
-				}
-				else if (req.resolvedtime < lTime - week - 32400000) // 32400000 = 9 hours
-				{
-					Console.WriteLine($"Checked request #{i} - Resolved");
-					i--;
-				}
-				else if (req.sdp_status == "Success" && req.resolvedtime > lTime - week - 32400000)
-				{
-					for (int j = 0; j < techAmount; j++)
-					{
-						if (req.technician == technicians[j])
-							made[j]++;
-					}
-					Console.WriteLine($"Checked request #{i} - Recently resolved");
-					i--;
-				}
-			}
-			while (req.createdtime > lTime - week * 5 || req.sdp_status == "Failed");   // checking for last 5 weeks
-
-			Console.Clear();
-			for (int j = 0; j < techAmount; j++)
-			{
-				Console.WriteLine($"{technicians[j]}\t{made[j]} requests");
-			}
-
-		}
-
 		public void createTsvReport()
 		{
-			long week = 86400 * 7 * 1000;
-
-			int[] made = new int[techAmount];
-			int[] pending = new int[techAmount];
-			for (int j = 0; j < techAmount; j++)
-			{
-				made[j] = 0;
-				pending[j] = 0;
-			}
+			long week = 86400 * 2 * 1000;
 
 			Request req = new Request(reqAmount);
 			long lTime = req.createdtime;
 
 			int i = reqAmount;
 
-			List<Request>[] resolvedList = new List<Request>[techAmount];
-			List<Request>[] pendingList = new List<Request>[techAmount];
-
-			for (int l = 0; l < techAmount; l++)
-			{
-				resolvedList[l] = new List<Request>();
-				pendingList[l] = new List<Request>();
-			}
+			List<Request> resolvedList = new List<Request>();
+			resolvedList = new List<Request>();
 
 			do
 			{
@@ -182,17 +117,6 @@ namespace MTRF_Report
 				}
 				else if (req.status != "Выполнено")
 				{
-					if (req.status == "Зарегистрирована" || req.status == "В ожидании")
-					{
-						for (int j = 0; j < techAmount; j++)
-						{
-							if (req.technician == technicians[j])
-							{
-								pending[j]++;
-								pendingList[j].Add(req);
-							}
-						}
-					}
 					Console.WriteLine($"Checked request #{i} - Pending");
 					i--;
 				}
@@ -207,8 +131,7 @@ namespace MTRF_Report
 					{
 						if (req.technician == technicians[j])
 						{
-							made[j]++;
-							resolvedList[j].Add(req);
+							resolvedList.Add(req);
 						}
 					}
 					Console.WriteLine($"Checked request #{i} - Recently resolved");
@@ -217,81 +140,48 @@ namespace MTRF_Report
 			}
 			while (req.createdtime > lTime - week * 5 || req.sdp_status == "Failed");   // checking for last 5 weeks
 
-			string namep = DateTime.Now.ToString(@"dd/MM/yyyy hh-mm") + "p.tsv";
 			string name = DateTime.Now.ToString(@"dd/MM/yyyy hh-mm") + ".tsv";
 			string path = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + @"\AppData\Local\Temp\SDP\Reports\";
 
 			Directory.CreateDirectory(path);
 
 			// Resolved requests
-			using (StreamWriter sw = new StreamWriter(File.Open(path + namep, FileMode.Create), Encoding.UTF32))
-			{
-				sw.WriteLine("\tID\tТема\tДата создания\tДата выполнения\tПотрачено времени\tПлощадка");
-				for (int t = 0; t < techAmount; t++)
-				{
-					sw.WriteLine(technicians[t] + " (Выполнено " + made[t] + ")\t\t\t\t\t");
-					foreach (Request rq in resolvedList[t])
-					{
-						sw.Write("\t");
-						sw.Write(rq.workorderid + "\t");
-						sw.Write(rq.subject + "\t");
-						sw.Write(Request.longToDateTime(rq.createdtime) + "\t");
-						sw.Write(Request.longToDateTime(rq.resolvedtime) + "\t");
-						sw.Write(rq.timespentonreq + "\t");
-						sw.Write(rq.area + "\n");
-					}
-				}
-				sw.Close();
-			}
-
-			// Pending requests
 			using (StreamWriter sw = new StreamWriter(File.Open(path + name, FileMode.Create), Encoding.UTF32))
 			{
-				sw.WriteLine("\tID\tТема\tАвтор заявки\tДата создания\tПлощадка\tПриоритет\tОписание");
-				for (int t = 0; t < techAmount; t++)
+				sw.WriteLine("№\tДата\tКабинет\tЗаявитель\tОписание заявки\tРешение\tПринял\tВремя прибытия инженера\tВремя закрытия заявки\tОбщее время выполнения");
+				int num = 0;
+
+				foreach (Request rq in resolvedList)
 				{
-					sw.WriteLine(technicians[t] + " (Открыто " + pending[t] + ")\t\t\t\t\t\t");
-					foreach (Request rq in pendingList[t])
-					{
-						//sw.Write("\t");
-						//sw.Write(rq.workorderid + "\t");
-						//sw.Write(rq.subject + "\t");
-						//sw.Write(rq.requester + "\t");
-						//sw.Write(Request.longToDateTime(rq.createdtime) + "\t");
-						//sw.Write(rq.area + "\t");
-						//sw.Write(rq.priority + "\t");
-						//sw.Write(rq.getDescForExcel(90) + "\n");
-					}
+					num++;
+					sw.Write(num + "\t");
+					sw.Write(Request.longToDateTime(rq.resolvedtime).ToString(@"dd/MM/yyyy") + "\t");
+					sw.Write($"{rq.site} ({rq.area})\t");
+					sw.Write(rq.requester + "\t");
+					sw.Write(rq.subject + "\t");
+					sw.Write(rq.resolution + "\t");
+					sw.Write(rq.technician + "\t");
+					sw.Write($"{Request.longToDateTime(rq.resolvedtime - rq.workMinutes).ToString(@"hh:mm")}\t");
+					sw.Write($"{Request.longToDateTime(rq.resolvedtime).ToString(@"hh:mm")}\t");
+					sw.Write($"{Request.timeSpentRus(rq.timespentonreq)}\n");
 				}
 				sw.Close();
 			}
 
 			Console.Clear();
-			Console.WriteLine("Generated report file: " + path + namep);
+			Console.WriteLine("Generated report file: " + path + name);
 
 			Application excel = new Application();
 
 			Workbook wb = excel.Workbooks.Open(path + name);
 			Worksheet ws1 = (Worksheet)wb.Worksheets[1];
-			ws1.Name = "Открытые заявки";
+			ws1.Name = "Отчет";
 			ws1.Columns.AutoFit();
 			Range rng = ws1.Range["A1", "A2"].EntireColumn;
 			rng.Font.Bold = true;
 			rng = ws1.Range["A1", "B1"].EntireRow;
 			rng.Font.Bold = true;
 
-			Workbook wb2 = excel.Workbooks.Open(path + namep);
-			Worksheet ws2 = (Worksheet)wb2.Worksheets[1];
-			ws2.Name = "Выполненные за неделю";
-			rng = ws2.Range["A1", "A2"].EntireColumn;
-			rng.Font.Bold = true;
-			rng = ws2.Range["A1", "B1"].EntireRow;
-			rng.Font.Bold = true;
-			ws2.Columns.AutoFit();
-
-			ws2.Copy(Before: ws1);
-
-			wb2.Close(SaveChanges: false);
 			excel.Visible = true;
 		}
 

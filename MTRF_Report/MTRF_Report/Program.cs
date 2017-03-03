@@ -1,8 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Net;
+using System.Xml;
+using System.Configuration;
+using System.IO;
+using Microsoft.Office.Interop.Excel;
+using System.Net.NetworkInformation;
 
 namespace MTRF_Report
 {
@@ -10,9 +13,42 @@ namespace MTRF_Report
 	{
 		static void Main(string[] args)
 		{
-			Request req = new Request(8336);
-			req.consoleOutputMTRF();
-			Console.ReadKey();
+			Ping ping = new Ping();
+			IPAddress ip = new IPAddress(134744072);
+			PingOptions options = new PingOptions();
+			options.DontFragment = true;
+			options.Ttl = 57;
+			string data = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+			byte[] buffer = Encoding.ASCII.GetBytes(data);
+
+			try
+			{
+				PingReply reply = ping.Send(ip, 3000, buffer, options);
+				if (reply.Status == IPStatus.Success)
+				{
+					Console.WriteLine("Ping help.citysystems.su - Success");
+
+					Reporter t = new Reporter();
+					if (!t.creatingError)
+					{
+						t.createTsvReport();
+					}
+					else
+					{
+						Console.ReadKey();
+					}
+				}
+				else
+				{
+					Console.WriteLine("Ping help.citysystems.su - Failed");
+					Console.ReadKey();
+				}
+			}
+			catch (Exception)
+			{
+				Console.WriteLine("Ping help.citysystems.su - Failed");
+				Console.ReadKey();
+			}
 		}
 	}
 }

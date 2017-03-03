@@ -107,6 +107,9 @@ namespace MTRF_Report
 							description = reader.ReadElementContentAsString();
 							reader.ReadToFollowing("value");
 							area = reader.ReadElementContentAsString();
+
+							if (site.Length < 2)
+								site = null;
 						}
 						else
 						{
