@@ -10,6 +10,9 @@ namespace MTRF_Report
 	{
 		static void Main(string[] args)
 		{
+			Request req = new Request(8336);
+			req.consoleOutputMTRF();
+			Console.ReadKey();
 		}
 	}
 }
