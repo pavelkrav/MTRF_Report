@@ -97,7 +97,7 @@ namespace MTRF_Report
 
 		public void createTsvReport()
 		{
-			long week = 86400 * 2 * 1000;
+			long week = 86400 * 7 * 1000;
 
 			Request req = new Request(reqAmount);
 			long lTime = req.createdtime;
@@ -156,14 +156,14 @@ namespace MTRF_Report
 					num++;
 					sw.Write(num + "\t");
 					sw.Write(Request.longToDateTime(rq.resolvedtime).ToString(@"dd/MM/yyyy") + "\t");
-					sw.Write($"{rq.site} ({rq.area})\t");
-					sw.Write(rq.requester + "\t");
-					sw.Write(rq.subject + "\t");
-					sw.Write(rq.resolution + "\t");
-					sw.Write(rq.technician + "\t");
-					sw.Write($"{Request.longToDateTime(rq.resolvedtime - rq.workMinutes).ToString(@"hh:mm")}\t");
-					sw.Write($"{Request.longToDateTime(rq.resolvedtime).ToString(@"hh:mm")}\t");
-					sw.Write($"{Request.timeSpentRus(rq.timespentonreq)}\n");
+					sw.Write($"{rq.readableSite()}\t");
+					sw.Write(rq.requesterAcronym() + "\t");
+					sw.Write(Request.convertFromHTML(rq.subject) + "\t");
+					sw.Write(Request.convertFromHTML(rq.resolution) + "\t");
+					sw.Write(rq.technicianAcronym() + "\t");
+					sw.Write($"{Request.longToDateTime(rq.resolvedtime - rq.workMinutes).ToString(@"HH:mm")}\t");
+					sw.Write($"{Request.longToDateTime(rq.resolvedtime).ToString(@"HH:mm")}\t");
+					sw.Write($"{rq.timeSpentRus()}\n");
 				}
 				sw.Close();
 			}

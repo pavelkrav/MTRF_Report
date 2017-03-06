@@ -108,7 +108,7 @@ namespace MTRF_Report
 							reader.ReadToFollowing("value");
 							area = reader.ReadElementContentAsString();
 
-							if (site.Length < 2)
+							if (site.Length < 3)
 								site = null;
 						}
 						else
@@ -237,11 +237,87 @@ namespace MTRF_Report
 			return new DateTime(beginTicks + dateNumber * 10000);
 		}
 
-		public static string timeSpentRus(string timeSpent) // not working =(
+		public string timeSpentRus()
 		{
-			timeSpent.Replace("hrs", "ч.");
-			timeSpent.Replace("min", "мин.");
+			string timeSpent = timespentonreq;
+			timeSpent = timeSpent.Replace("hrs", "ч");
+			timeSpent = timeSpent.Replace("min", "мин");
 			return timeSpent;
+		}
+
+		public string technicianAcronym()
+		{
+			string[] array = technician.Split(' ');
+			if (array.Length != 3)
+				return technician;
+			else
+			{
+				return $"{array[0]} {array[1].Substring(0, 1)}.{array[2].Substring(0, 1)}.";
+			}
+		}
+
+		public string requesterAcronym()
+		{
+			string[] array = requester.Split(' ');
+			if (array.Length != 3)
+				return requester;
+			else
+			{
+				return $"{array[0]} {array[1].Substring(0, 1)}.{array[2].Substring(0, 1)}.";
+			}
+		}
+
+		public string readableSite()
+		{
+			string result = "";
+			if (site != null)
+				result += site;
+			if (area == "Рождественка")
+				return result;
+			if (area == "РосГраница")
+				result += "(РГ)";
+			if (area == "ФАЖТ (Ст.Басманная)")
+				result += "(ФАЖТ)";
+			return result;
+		}
+
+		public static string convertFromHTML(string text)
+		{
+			if (String.IsNullOrWhiteSpace(text))
+				return text;
+			string temp = text;
+			temp = temp.Replace("\n", ". ");
+			// special symbols
+			temp = temp.Replace("&quot;", "\"");
+			temp = temp.Replace("&nbsp;", " ");
+			temp = temp.Replace("&lt;", "<");
+			temp = temp.Replace("&gt;", ">");
+			// break row
+			temp = temp.Replace("<div>", ". ");
+			temp = temp.Replace("</div>", "");
+			temp = temp.Replace("<p>", ". ");
+			temp = temp.Replace("</p>", "");
+			temp = temp.Replace("<br>", ". ");
+			// other tags
+			int openBr = 0;
+			int closeBr = 0;
+			string result = null;
+			for (int i = 0; i < temp.Length; i++)
+			{
+				if (temp[i] == '<')
+					openBr++;
+				else if (temp[i] == '>')
+					closeBr++;
+				if (openBr == 0)
+					result += temp[i];
+				else if (openBr == closeBr)
+				{
+					openBr = 0;
+					closeBr = 0;
+				}
+			}
+
+			return result;
 		}
 
 		public void consoleOutput()
@@ -286,14 +362,14 @@ namespace MTRF_Report
 				if (status == "Выполнено")
 				{
 					Console.WriteLine($"Date: {longToDateTime(resolvedtime).ToString(@"dd/MM/yyyy")}");
-					Console.WriteLine($"Site: {site} ({area})");
-					Console.WriteLine($"Requester: {requester}");
+					Console.WriteLine($"Site: {readableSite()}");
+					Console.WriteLine($"Requester: {requesterAcronym()}");
 					Console.WriteLine($"Subject: {subject}");
-					Console.WriteLine($"Resolution: {resolution}");
-					Console.WriteLine($"Technician: {technician}");
-					Console.WriteLine($"Worker in: {longToDateTime(resolvedtime - workMinutes).ToString(@"hh:mm")}");
-					Console.WriteLine($"Closed at: {longToDateTime(resolvedtime).ToString(@"hh:mm")}");
-					Console.WriteLine($"Time spent: {timeSpentRus(timespentonreq)}");
+					Console.WriteLine($"Resolution: {convertFromHTML(resolution)}");
+					Console.WriteLine($"Technician: {technicianAcronym()}");
+					Console.WriteLine($"Worker in: {longToDateTime(resolvedtime - workMinutes).ToString(@"HH:mm")}");
+					Console.WriteLine($"Closed at: {longToDateTime(resolvedtime).ToString(@"HH:mm")}");
+					Console.WriteLine($"Time spent: {timeSpentRus()}");
 				}
 				else
 				{
